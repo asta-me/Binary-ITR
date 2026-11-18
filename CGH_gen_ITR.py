@@ -220,10 +220,10 @@ X, Y = np.meshgrid(x, x)
 # Aberration pre-compensation: the astigmatism coefficients below were
 # measured for our specific projection setup. When False the aberration
 # phase is zero: ideal hologram generation and ideal propagation.
-compensate_aberration = False
+compensate_aberration = True
 
 # Save the binary holograms as 8-bit TIFF files
-save_holograms = False
+save_holograms = True
 
 # Astigmatism aberration phase of the projection path
 a = 15e-2                     # Astigmatism coefficient (0/90 deg)
@@ -233,10 +233,9 @@ if compensate_aberration:
 else:
     Phase_abb = np.zeros_like(X)
 
-
 ##### Target image preparation #####
 
-input_image_path = "cow.png"
+input_image_path = "pcl.png"
 
 # Load, drop transparency, convert to grayscale (ITU-R 601 luma weights)
 img = Image.open(input_image_path).convert("RGBA")
@@ -265,83 +264,98 @@ Rec = fftshift(fft2(fftshift(hologram_ITR * np.exp(1j * Phase_abb))))
 
 if save_holograms:
     # 'hologram' (not 'hologram_ITR') holds the 0/255 values fitting uint8
-    Image.fromarray(hologram.astype(np.uint8)).save('Hologram_ITR_cow.tiff')
+    Image.fromarray(hologram.astype(np.uint8)).save('Hologram_ITR_pcl.tiff')
 
 ##### CGH generation: GS + off-axis binarization #####
 
-t2 = get_time()
+# t2 = get_time()
 
-# Hologram phase from GS (aberration pre-compensation if enabled)
-Op, _, _ = gs_resampled(target, itr)
-Op = (Op - Phase_abb) % (2 * np.pi)
-Of = np.exp(1j * Op)
+# # Hologram phase from GS (aberration pre-compensation if enabled)
+# Op, _, _ = gs_resampled(target, itr)
+# Op = (Op - Phase_abb) % (2 * np.pi)
+# Of = np.exp(1j * Op)
 
-# Off-axis reference field
-theta = 0.662 * np.pi / 12
-Rp = 2 * np.pi * np.sin(theta) * X / lam + 2 * np.pi * np.sin(theta) * Y / lam
-Rf = np.exp(1j * Rp)
+# # Off-axis reference field
+# theta = 0.662 * np.pi / 12
+# Rp = 2 * np.pi * np.sin(theta) * X / lam + 2 * np.pi * np.sin(theta) * Y / lam
+# Rf = np.exp(1j * Rp)
 
-# Binary intensity hologram: interference + mean thresholding
-Ip = np.abs(Rf + Of)**2
-Ip = (Ip > np.mean(Ip))
-hologram_GS = 255 * Ip.astype(int)
+# # Binary intensity hologram: interference + mean thresholding
+# Ip = np.abs(Rf + Of)**2
+# Ip = (Ip > np.mean(Ip))
+# hologram_GS = 255 * Ip.astype(int)
 
-t2 = get_time() - t2
-print("GS computation time:", t2)
+# t2 = get_time() - t2
+# print("GS computation time:", t2)
 
-# Numerical reconstruction
-Rec_gs = fftshift(fft2(fftshift(hologram_GS * np.exp(1j * Phase_abb))))
+# # Numerical reconstruction
+# Rec_gs = fftshift(fft2(fftshift(hologram_GS * np.exp(1j * Phase_abb))))
 
-if save_holograms:
-    Image.fromarray(hologram_GS.astype(np.uint8)).save('Hologram_GS_cow.tiff')
-
-
-##### CGH generation: RS + off-axis binarization #####
-
-t3 = get_time()
-
-# Hologram phase from RS (aberration pre-compensation if enabled)
-Op1 = rs_minimal(target)
-Op1 = (Op1 - Phase_abb) % (2 * np.pi)
-Of1 = np.exp(1j * Op1)
-
-# Off-axis reference field
-theta = 0.662 * np.pi / 12
-Rp1 = 2 * np.pi * np.sin(theta) * X / lam + 2 * np.pi * np.sin(theta) * Y / lam
-Rf1 = np.exp(1j * Rp1)
-
-# Binary intensity hologram: interference + mean thresholding
-Ip1 = np.abs(Rf1 + Of1)**2
-Ip1 = (Ip1 > np.mean(Ip1))
-hologram_RS = 255 * Ip1.astype(int)
-
-t3 = get_time() - t3
-print("RS computation time:", t3)
-
-# Numerical reconstruction
-Rec_rs = fftshift(fft2(fftshift(hologram_RS * np.exp(1j * Phase_abb))))
-
-if save_holograms:
-    Image.fromarray(hologram_RS.astype(np.uint8)).save('Hologram_RS_cow.tiff')
+# if save_holograms:
+#     Image.fromarray(hologram_GS.astype(np.uint8)).save('Hologram_GS_cow.tiff')
 
 
-##### Display of the numerical reconstructions (first order region) #####
-# The exponent 1e-3 compresses the dynamic range for visualization
+# ##### CGH generation: RS + off-axis binarization #####
 
-plt.figure()
-plt.imshow(np.abs(Rec[P:N, P:N]) ** 1e-3, cmap='gray')
-plt.colorbar()
-plt.title('Reconstruction ITR')
-plt.show()
+# t3 = get_time()
 
-plt.figure()
-plt.imshow(np.abs(Rec_gs[P:N, P:N]) ** 1e-3, cmap='gray')
-plt.colorbar()
-plt.title('Reconstruction GS')
-plt.show()
+# # Hologram phase from RS (aberration pre-compensation if enabled)
+# Op1 = rs_minimal(target)
+# Op1 = (Op1 - Phase_abb) % (2 * np.pi)
+# Of1 = np.exp(1j * Op1)
 
-plt.figure()
-plt.imshow(np.abs(Rec_rs[P:N, P:N]) ** 1e-3, cmap='gray')
-plt.colorbar()
-plt.title('Reconstruction RS')
-plt.show()
+# # Off-axis reference field
+# theta = 0.662 * np.pi / 12
+# Rp1 = 2 * np.pi * np.sin(theta) * X / lam + 2 * np.pi * np.sin(theta) * Y / lam
+# Rf1 = np.exp(1j * Rp1)
+
+# # Binary intensity hologram: interference + mean thresholding
+# Ip1 = np.abs(Rf1 + Of1)**2
+# Ip1 = (Ip1 > np.mean(Ip1))
+# hologram_RS = 255 * Ip1.astype(int)
+
+# t3 = get_time() - t3
+# print("RS computation time:", t3)
+
+# # Numerical reconstruction
+# Rec_rs = fftshift(fft2(fftshift(hologram_RS * np.exp(1j * Phase_abb))))
+
+# if save_holograms:
+#     Image.fromarray(hologram_RS.astype(np.uint8)).save('Hologram_RS_cow.tiff')
+
+
+# ##### Display of the numerical reconstructions (first order region) #####
+# # The exponent 1e-3 compresses the dynamic range for visualization
+
+# plt.figure()
+# plt.imshow(np.abs(Rec[P:N, P:N]) ** 1e-3, cmap='gray')
+# plt.colorbar()
+# plt.title('Reconstruction ITR')
+# plt.show()
+
+# plt.figure()
+# plt.imshow(np.abs(Rec_gs[P:N, P:N]) ** 1e-3, cmap='gray')
+# plt.colorbar()
+# plt.title('Reconstruction GS')
+# plt.show()
+
+# plt.figure()
+# plt.imshow(np.abs(Rec_rs[P:N, P:N]) ** 1e-3, cmap='gray')
+# plt.colorbar()
+# plt.title('Reconstruction RS')
+# plt.show()
+
+
+# if __name__=="__main__":
+#     image= np.zeros((540,540))
+#     xc=(np.random.random(20)*540).astype(int)
+#     yc=(np.random.random(20)*540).astype(int)
+#     image[yc, xc] = 1
+#     m, n = image.shape
+#     N = 1080
+#     target = np.zeros((N, N))
+#     target[((N - m) // 2):((N + m) // 2), ((N - n) // 2):((N + n) // 2)] = image
+
+#     itr_holo= iterativeEst(image,10)
+#     plt.imshow(itr_holo)
+#     plt.show()
